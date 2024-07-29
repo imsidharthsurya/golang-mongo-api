@@ -2,10 +2,13 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	model "mongo-api/models"
+	"net/http"
 
+	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -115,4 +118,62 @@ func getAllMovie() []primitive.D {
 	}
 	defer cur.Close(context.Background())
 	return movies
+}
+
+//creating actual controllers which routers will use
+
+func GetAllMovies(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	allMovies := getAllMovie()
+	//return the data in form of json
+	json.NewEncoder(w).Encode(allMovies)
+}
+
+// controller for creating/inserting a movie
+func InsertMovie(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Allow-Control-Allow-Methods", "POST")
+
+	var movie model.Netflix
+	_ = json.NewDecoder(r.Body).Decode(&movie)
+
+	//now pass this movie to helper method
+	insertOne(movie)
+	//return the movie which got inserted
+	json.NewEncoder(w).Encode(movie)
+}
+
+// controller for updating a movie
+func UpdateMovie(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Allow-Control-Allow-Methods", "PUT")
+
+	//get id from params using mux
+	params := mux.Vars(r)
+	//pass this id into helper method to update the movie
+	updateMovie(params["id"])
+	//return the id of the movie which got updated
+	json.NewEncoder(w).Encode(params["id"])
+}
+
+// delete 1 movie controller
+func DeleteOneMovie(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Allow-Control-Allow-Methods", "DELETE")
+
+	//get id from params using mux
+	params := mux.Vars(r)
+	deleteOneMovie(params["id"])
+	//return the id of the movie which got deleted
+	json.NewEncoder(w).Encode(params["id"])
+}
+
+// delete all movies controller
+func DeleteAllMovies(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Allow-Control-Allow-Methods", "DELETE")
+
+	count := deleteAllMovies()
+	//return the id of the movie which got deleted
+	json.NewEncoder(w).Encode(count)
 }
